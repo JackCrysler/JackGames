@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>是男人就坚持28秒</title>
+    <style>
+        body{ overflow: hidden; height: 40px;line-height: 40px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;}
+        #remind{ position: absolute;}
+        #remind span{ color: #ff7314; font-size: 36px; font-weight: bold; float: right;}
+    </style>
+</head>
+<body>
+<div id="remind">点击黑色球开始……</div>
+<script>
+    function getViewPort(){
+        var d=document.documentElement,b=document.body,w=window,div=document.createElement("div");
+        div.innerHTML=" <link/><table></table><a href='/a'>a</a><input type='checkbox'/>";
+        var scroll=!(div.firstChild.nodeType===3) ?
+        {left: d.scrollLeft || b.scrollLeft , top: d.scrollTop || b.scrollTop} :
+        {left: w.pageXOffset , top: w.pageYOffset};
+        var viewSight= w.innerWidth ?
+        {width: w.innerWidth , height: w.innerHeight} :
+                (d && d.clientWidth && d.clientWidth !=0 ?
+                {width: d.clientWidth, height: d.clientHeight} :
+                {width: b.clientWidth, height: b.clientHeight});
+        return [scroll.left, scroll.top, viewSight.width, viewSight.height];
+    }
+    var vp=getViewPort();
+
+    function getStyle(node,type){
+        if(node.style[type]){//判断是否行内样式
+            return node.style[type];
+        }else{//获取外部样式（兼容IE）
+            return getComputedStyle ? getComputedStyle(node,null)[type] : node.currentStyle[type];
+        }
+    }
+
+    function randomNum(min,max){
+        return Math.floor(Math.random()*(max-min+1)+min)
+    }
+
+    var timer,action= 1,chrono_ele;
+    function chronoscope(){//计时器
+        if(action>1) return;
+        if(!chrono_ele){
+            chrono_ele=document.createElement("span");
+            document.getElementById("remind").appendChild(chrono_ele);
+        }
+        var chronoEle=document.querySelector("#remind span");
+        timer=setInterval(function(){
+            chronoEle.innerHTML=action;
+            action++;
+        },1000)
+    }
+
+    function randomColor(){
+        return "rgb("+Math.floor(Math.random()*256)+","+Math.floor(Math.random()*256)+","+Math.floor(Math.random()*256)+")";
+    }
+
+    //定义对象Ball
+    var Ball=function(x,y,speed_x,speed_y,r,color){
+        this.x=x;
+        this.y=y;
+        this.speed_x=speed_x;
+        this.speed_y=speed_y;
+        this.r=r;
+        this.color=color;
+
+        this.element=document.createElement("div");
+        this.d=r*2;
+        document.body.appendChild(this.element);
+        this.render();
+
+    };
+    Ball.prototype={
+        move:function(){
+            this.x+=this.speed_x;
+            this.y+=this.speed_y;
+        },
+        render:function(){
+            this.element.style.cssText="background: "+this.color+"; width: "+this.d+"px; height: "+this.d+"px;" +
+            "border-radius: 50%; position: absolute; top: "+this.y+"px; left: "+this.x+"px; cursor: default;";
+        },
+        tick:function(){
+            this.move();
+            this.render();
+        }
+    };
+
+    function renderBalls(count){
+        var balls=[];
+        for(var i=0; i<count; i++){
+            balls.push(new Ball(900,200,randomNum(-5,5),randomNum(-5,5),randomNum(20,40),randomColor()))
+        }
+        return balls;
+    }
+
+    var balls=renderBalls(17);
+
+    var handleBall=new Ball(100,100,2,1,30,"#000");
+
+    var start=false,
+        initX,
+        initY,
+        h_b=handleBall.element,
+        h_b_h=h_b.offsetHeight,
+        h_b_w=h_b.offsetWidth,
+        growSpeed=0.05;
+
+    h_b.onmousedown=function(evt){
+        if(!timer) chronoscope();//开始计时
+        start=true;
+        initX=parseInt(getStyle(h_b,"left"));
+        initY=parseInt(getStyle(h_b,"top"));
+
+        var initMouseX=evt.x || evt.pageX,
+            initMouseY= evt.y || evt.pageY;
+        var minusX=initMouseX-initX;
+        var minusY=initMouseY-initY;
+
+        document.onmousemove=function(e){
+            if(start){
+                var moveX= e.x || e.pageX;
+                var moveY= e.y || e.pageY;
+                //moveX<=minusX ? h_b.style.left=0 : h_b.style.left=moveX-minusX+"px";
+                //moveY<=minusY ? h_b.style.top=0 : h_b.style.top=moveY-minusY+"px";
+                moveX+h_b_w-minusX>=vp[2] ? h_b.style.left=vp[2]-h_b_w :
+                        (moveX<=minusX ? h_b.style.left=0 : h_b.style.left=moveX-minusX+"px");
+                moveY+h_b_h-minusY>=vp[3] ? h_b.style.left=vp[3]-h_b_h :
+                        (moveY<=minusY ? h_b.style.top=0 : h_b.style.top=moveY-minusY+"px");
+            }
+        };
+        document.onmouseup=function(){
+            document.onmousemove=null;
+            document.onmousedown=null;
+        };
+    };
+
+    function h_b_Max_r(r){//控制操作球的的最大半径
+        if(h_b_h<=2*r){
+            h_b_h+=growSpeed;
+            h_b_w+=growSpeed;
+            handleBall.r+=growSpeed/2;
+        }
+        h_b.style.height=h_b_h+"px";
+        h_b.style.width=h_b_w+"px";
+    }
+
+    function ifCrashed(initX,initY){
+        h_b_Max_r(90);//handball变大(最大半径)。
+        var R_Plus_R=[],distance=[], i,len,j;
+        for( i= 0,len=balls.length; i<len; i++){
+            var ball_ele=balls[i].element,
+                randBallX=parseInt(getStyle(ball_ele,"left")),
+                randBallY=parseInt(getStyle(ball_ele,"top")),
+                _x=(randBallX+balls[i].r)-(initX+handleBall.r),
+                _y=(randBallY+balls[i].r)-(initY+handleBall.r);
+            distance.push(Math.sqrt(Math.pow(_x,2)+Math.pow(_y,2)));
+            R_Plus_R.push(balls[i].r+handleBall.r);
+        }
+
+        for( j in R_Plus_R ){
+            if(R_Plus_R[j]>=distance[j]){//判断是否发生碰撞，重置操作球的数据。
+                start=false;
+                initX=null;
+                initY=null;
+                clearInterval(timer);
+                timer=null;
+                action>=28 ? alert("真男儿！") : alert("哦，崔斯塔娜！");
+                action=1;
+                h_b_h=60;
+                h_b_w=60;
+                h_b.style.height=60+"px";
+                h_b.style.width=60+"px";
+                handleBall.r=30;
+            }
+        }
+    }
+
+    setInterval(function(){
+        for( var i= 0,len=balls.length; i<len; i++ ){
+            var ball=balls[i];
+            ball.tick();
+            if(ball.x<0 || (ball.x+ball.d>vp[2])) ball.speed_x*=-1;
+            if(ball.y<0 || (ball.y+ball.d>vp[3])) ball.speed_y*=-1;
+        }
+        if(start){
+            initX=parseFloat(getStyle(h_b,"left"));
+            initY=parseFloat(getStyle(h_b,"top"));
+
+            //执行碰撞判断函数
+            ifCrashed(initX,initY);
+        }
+    },15);
+
+</script>
+</body>
+</html>
