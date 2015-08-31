@@ -117,6 +117,7 @@
         initX=parseInt(getStyle(h_b,"left"));
         initY=parseInt(getStyle(h_b,"top"));
 
+        console.log(evt.x)
         var initMouseX=evt.x || evt.pageX,
             initMouseY= evt.y || evt.pageY;
         var minusX=initMouseX-initX;
