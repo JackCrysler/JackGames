@@ -4,4 +4,4 @@
 
 ## Pub-Sub Design
 
-## Extensable
+## Extensible
