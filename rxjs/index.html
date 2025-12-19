@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <button class="btn">test rxjs</button>
+    <input class="input" type="text" />
+    <script src="https://unpkg.com/rxjs@7.8.2/dist/bundles/rxjs.umd.min.js"></script>
+    <script>
+        rxjs.fromEvent(document.querySelector('.btn'), 'click')
+        .pipe(rxjs.map((x, index) => {
+            return [x.target, index + 1]
+        }))
+        .pipe(rxjs.throttleTime(1000))
+        .subscribe((data) => {
+            console.log(data)
+        })
+
+        rxjs.fromEvent(document.querySelector('.input'), 'input')
+        .pipe(rxjs.map(x => x.target.value))
+        .pipe(rxjs.debounce(() => rxjs.interval(1000)))
+        .subscribe((data) => {
+            console.log(data)
+        })
+    </script>
+</body>
+</html>
